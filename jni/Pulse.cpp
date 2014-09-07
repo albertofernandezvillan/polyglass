@@ -7,6 +7,8 @@
 
 //was 1000.0
 #define FACE_DETECTION_PERIOD 1000.0
+#define HR_LOW 40.0
+#define HR_HIGH 240.0
 
 using std::stringstream;
 using namespace cv;
@@ -301,10 +303,10 @@ void Pulse::peaks(Face& face) {
     // TODO extract constants to class?
     bool validPulse =
             2 <= face.peaks.indices.rows &&
-            40/60 * diff <= face.peaks.indices.rows &&
-            face.peaks.indices.rows <= 240/60 * diff &&
-            peakValuesStdDev(0) <= 0.5 &&
-            peakTimestampsStdDev(0) <= 0.5;
+            //HR_LOW/60 * diff <= face.peaks.indices.rows &&
+            //face.peaks.indices.rows <= HR_HIGH/60 * diff &&
+            peakValuesStdDev(0) <= 1.0 &&
+            peakTimestampsStdDev(0) <= 1.0;
 
     if (!face.existsPulse && validPulse) {
         // pulse become valid
@@ -343,8 +345,8 @@ void Pulse::bpm(Face& face) {
     const int total = face.raw.rows;
 
     // band limit
-    const int low = total * 40./60./currentFps + 1;
-    const int high = total * 240./60./currentFps + 1;
+    const int low = total * HR_LOW/60./currentFps + 1;
+    const int high = total * HR_HIGH/60./currentFps + 1;
     powerSpectrum.rowRange(0, min((size_t)low, (size_t)total)) = ZERO;
     powerSpectrum.pop_back(min((size_t)(total - high), (size_t)total));
 
@@ -357,7 +359,7 @@ void Pulse::bpm(Face& face) {
         minMaxIdx(powerSpectrum, 0, 0, 0, &idx[0]);
 
         // calculate BPM
-        face.bpms.push_back<double>(idx[0] * currentFps * 30. / total); // constant 30 = 60 BPM / 2
+        face.bpms.push_back<double>(idx[0] * currentFps * 60. / total); // constant 30 = 60 BPM / 2
     }
 
     // update BPM when none available or after one second
@@ -369,7 +371,7 @@ void Pulse::bpm(Face& face) {
         face.bpms.pop_back(face.bpms.rows);
 
         // mark as no pulse when BPM is too low
-        if (face.bpm <= 40) {
+        if (face.bpm <= 60) {
             face.existsPulse = false;
         }
     }
