@@ -18,15 +18,12 @@
         
     </LinearLayout>
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.85">
 
     <FrameLayout
         android:id="@+id/camera_wrapper"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="0.85">
 
         <org.opencv.android.MyJavaCameraView
             android:id="@+id/camera"
@@ -35,7 +32,6 @@
             android:layout_weight="0.7"
             opencv:camera_id="back" />
         
-    </FrameLayout>
     </FrameLayout>
     
 </LinearLayout>

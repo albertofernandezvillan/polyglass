@@ -5,6 +5,9 @@
 #include "ext/opencv.hpp"
 #include "profiler/Profiler.h"
 
+//was 1000.0
+#define FACE_DETECTION_PERIOD 1000.0
+
 using std::stringstream;
 using namespace cv;
 
@@ -41,13 +44,13 @@ void Pulse::onFrame(Mat& frame) {
     now = getTickCount();
 
     // detect faces only every second
-    if ((now - lastFaceDetectionTimestamp) * 1000. / getTickFrequency() >= 1000) {
+    if ((now - lastFaceDetectionTimestamp) * FACE_DETECTION_PERIOD / getTickFrequency() >= FACE_DETECTION_PERIOD) {
         lastFaceDetectionTimestamp = getTickCount();
 
         PROFILE_START_DESC("detect faces");
         // detect faces
         cvtColor(frame, gray, CV_RGB2GRAY);
-        classifier.detectMultiScale(frame, boxes, 1.25, 3, 0, minFaceSize); //was 1.1 instead of 1.25
+        classifier.detectMultiScale(frame, boxes, 1.2, 3, 0, minFaceSize); //was 1.1 instead of 1.15
         PROFILE_STOP();
 
         // iterate through faces and boxes

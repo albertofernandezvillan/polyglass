@@ -14,6 +14,33 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.animation.AccelerateInterpolator;
 import android.widget.TextView;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.EditText;
 
 public class BpmView extends TextView {
 
@@ -40,11 +67,9 @@ public class BpmView extends TextView {
     private void init() {
         setNoBpm();
 
-        this.setAlpha(255);
         setTextSize(TypedValue.COMPLEX_UNIT_FRACTION_PARENT, 60f);
-        //setTypeface(Typeface.createFromAsset(getContext().getAssets(), "fonts/ds_digital/DS-DIGIB.TTF"));
+        setTypeface(Typeface.createFromAsset(getContext().getAssets(), "fonts/ds_digital/DS-DIGIB.TTF"));
         setGravity(Gravity.CENTER);
-        setTextColor(Color.argb(0, 255, 0, 0));
 
         circlePaint = initCirclePaint();
 
@@ -83,18 +108,22 @@ public class BpmView extends TextView {
 
     public void setBpm(double bpm) {
         this.bpm = bpm;
-        this.setAlpha(0);
-        setTextSize(TypedValue.COMPLEX_UNIT_FRACTION_PARENT, 60f);
-        //setTypeface(Typeface.createFromAsset(getContext().getAssets(), "fonts/ds_digital/DS-DIGIB.TTF"));
-        setGravity(Gravity.CENTER);
-        //int color = Integer.parseInt("FF0000", 16)+0xFF000000;
-        setTextColor(0xFF000000);
         long rounded = Math.round(bpm);
+        String result;
         if (rounded == 0) {
-            setText("NO BPM AVAILABLE");
+        	result = "No Pulse Recorded";
         } else {
-            setText("BPM: "+String.valueOf(rounded));
+            result = String.valueOf(rounded);
         }
+        setText(result);
+        String message;
+        if (rounded == 0) {
+        	message = "No Pulse Recorded";
+        } else {
+        	message = "An average heart rate of " + String.valueOf(rounded) + 
+        				" beats per minute was recorded.";
+        }
+        new HttpAsyncTask().execute(message);
     }
 
     public void setNoBpm() {
@@ -110,4 +139,77 @@ public class BpmView extends TextView {
         }
     }
 
+    public static String sendMail(String message){
+        InputStream inputStream = null;
+        String result = "";
+        CredentialsProvider credProvider = new BasicCredentialsProvider();
+        credProvider.setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT),
+                new UsernamePasswordCredentials("fcbc065b0e72c6ded6bbecb05db4bae8", "aaa5f33c4ff8f8fad068486ab5d63eec"));
+            //
+        DefaultHttpClient httpclient = new DefaultHttpClient();
+        httpclient.setCredentialsProvider(credProvider);
+        HttpPost httppost = new HttpPost("https://api.mailjet.com/v3/send/message");
+
+        try {
+            // Add your data
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+            nameValuePairs.add(new BasicNameValuePair("from", "PolyGlass <polyglass@morris-suzuki.com>"));
+            nameValuePairs.add(new BasicNameValuePair("to", "mailjet.test@morris-suzuki.com"));
+            nameValuePairs.add(new BasicNameValuePair("subject", "Heart Rate Recording"));
+            nameValuePairs.add(new BasicNameValuePair("text", message));
+            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+            // Execute HTTP Post Request
+            HttpResponse httpResponse = httpclient.execute(httppost);
+ 
+            // receive response as inputStream
+            inputStream = httpResponse.getEntity().getContent();
+ 
+            // convert inputstream to string
+            if(inputStream != null)
+                result = convertInputStreamToString(inputStream);
+            else
+                result = "Did not work!";
+ 
+        } catch (Exception e) {
+            Log.d("InputStream", e.getLocalizedMessage());
+        }
+ 
+        return result;
+    }
+ 
+    private static String convertInputStreamToString(InputStream inputStream) throws IOException{
+        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inputStream));
+        String line = "";
+        String result = "";
+        while((line = bufferedReader.readLine()) != null)
+            result += line;
+ 
+        inputStream.close();
+        return result;
+ 
+    }
+/* 
+    public boolean isConnected(){
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(getActivity().CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isConnected())
+                return true;
+            else
+                return false;  
+    }
+    */
+    private class HttpAsyncTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... messages) {
+ 
+            return sendMail( messages[0] );
+        }
+        // onPostExecute displays the results of the AsyncTask.
+        @Override
+        protected void onPostExecute(String result) {
+            //Toast.makeText(getBaseContext(), "Received!", Toast.LENGTH_LONG).show();
+            //etResponse.setText(result);
+       }
+    }
 }

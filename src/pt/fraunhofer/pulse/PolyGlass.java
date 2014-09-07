@@ -1,5 +1,6 @@
 package pt.fraunhofer.pulse;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -108,6 +110,9 @@ public class PolyGlass extends Activity implements CvCameraViewListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        ActionBar actionBar = getActionBar();
+        if(actionBar!=null)
+        	actionBar.hide();
 
         setContentView(R.layout.app);
 
@@ -174,8 +179,8 @@ public class PolyGlass extends Activity implements CvCameraViewListener {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.app, menu);
+        //MenuInflater inflater = getMenuInflater();
+        //inflater.inflate(R.menu.app, menu);
         return true;
     }
 
@@ -200,7 +205,30 @@ public class PolyGlass extends Activity implements CvCameraViewListener {
     private List<Double> recordedBpms;
     private BpmDialog bpmDialog;
     private double recordedBpmAverage;
+    
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(keyCode == KeyEvent.KEYCODE_DPAD_CENTER){
+            // The touchpad was tapped
+        	recording = !recording;
+            if (recording) {
 
+                if (recordedBpms == null) recordedBpms = new LinkedList<Double>();
+                else recordedBpms.clear();
+            } else {
+
+                recordedBpmAverage = 0;
+                for (double bpm : recordedBpms) recordedBpmAverage += bpm;
+                recordedBpmAverage /= recordedBpms.size();
+
+                if (bpmDialog == null) bpmDialog = new BpmDialog();
+                bpmDialog.show(getFragmentManager(), null);
+            }
+            return true;
+        }
+
+        return false;
+    }
+    
     private void onRecord(MenuItem item) {
         recording = !recording;
         if (recording) {
@@ -365,17 +393,20 @@ public class PolyGlass extends Activity implements CvCameraViewListener {
     {
 
         long rounded = Math.round(bpm);
+
+        faceBoxTextPaint.setTextSize(100f);
         if (rounded == 0) {
             canvas.drawText("BPM: ??",
                     box.x + box.width / 2f,
                     box.y + box.height / 2f,
                     faceBoxTextPaint);
         } else {
-            canvas.drawText("BPM: "+String.valueOf(rounded),
+            canvas.drawText(String.valueOf(rounded)+" BPM",
                     box.x + box.width / 2f,
                     box.y + box.height / 2f,
                     faceBoxTextPaint);
         }
+        faceBoxTextPaint.setTextSize(20f);
     }
 
     public void setNoBpm(Canvas canvas, Rect box) {

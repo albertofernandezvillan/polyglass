@@ -8,9 +8,11 @@ import android.os.Bundle;
 import android.view.View;
 import pt.fraunhofer.pulse.PolyGlass;
 import pt.fraunhofer.pulse.R;
+import pt.fraunhofer.pulse.view.BpmView;
 
 public class BpmDialog extends DialogFragment {
 
+    private BpmView bpmView;
     private double bpm;
 
     @Override
@@ -22,7 +24,8 @@ public class BpmDialog extends DialogFragment {
         View dialogView = getActivity().getLayoutInflater().inflate(R.layout.bpm, null);
         builder.setView(dialogView);
 
-        //getActivity().setBpm(bpm);
+        bpmView = ((BpmView)dialogView.findViewById(R.id.bpm));
+        bpmView.setBpm(bpm);
 
         return builder.create();
     }
